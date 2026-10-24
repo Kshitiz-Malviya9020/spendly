@@ -123,33 +123,85 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
-    # Hardcoded data for UI mockup as per Spec Step 03
-    user_data = {
-        "name": "Kshitiz Malviya",
-        "email": "kshitiz@example.com",
-        "joined": "October 2023"
-    }
+    user_id = session["user_id"]
 
-    stats = {
-        "total_spent": "₹12,450.00",
-        "transactions": 42,
-        "top_category": "Food"
-    }
+    with get_db() as conn:
+        cursor = conn.cursor()
 
-    transactions = [
-        {"date": "2023-10-24", "description": "Starbucks Coffee", "category": "Food", "amount": "₹350.00"},
-        {"date": "2023-10-23", "description": "Uber Ride", "category": "Transport", "amount": "₹120.00"},
-        {"date": "2023-10-22", "description": "Grocery Store", "category": "Food", "amount": "₹1,200.00"},
-        {"date": "2023-10-21", "description": "Netflix Monthly", "category": "Entertainment", "amount": "₹499.00"},
-    ]
+        # 1. User Profile Data
+        cursor.execute(
+            "SELECT name, email, created_at FROM users WHERE id = ?",
+            (user_id,)
+        )
+        user_row = cursor.fetchone()
+        if not user_row:
+            flash("User not found.", "error")
+            return redirect(url_for("login"))
 
-    categories = [
-        {"name": "Food", "amount": "₹5,200", "percentage": 42},
-        {"name": "Transport", "amount": "₹2,100", "percentage": 17},
-        {"name": "Bills", "amount": "₹3,000", "percentage": 24},
-        {"name": "Entertainment", "amount": "₹1,150", "percentage": 9},
-        {"name": "Other", "amount": "₹1,000", "percentage": 8},
-    ]
+        # Formatting created_at (YYYY-MM-DD HH:MM:SS) to "Month Year"
+        from datetime import datetime
+        joined_date = datetime.strptime(user_row["created_at"], "%Y-%m-%d %H:%M:%S").strftime("%B %Y")
+
+        user_data = {
+            "name": user_row["name"],
+            "email": user_row["email"],
+            "joined": joined_date
+        }
+
+        # 2. Summary Statistics
+        cursor.execute(
+            "SELECT SUM(amount), COUNT(*) FROM expenses WHERE user_id = ?",
+            (user_id,)
+        )
+        total_spent_val, transaction_count = cursor.fetchone()
+        total_spent_float = total_spent_val if total_spent_val is not None else 0.0
+
+        cursor.execute(
+            "SELECT category FROM expenses WHERE user_id = ? GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
+            (user_id,)
+        )
+        top_cat_row = cursor.fetchone()
+        top_category = top_cat_row["category"] if top_cat_row else "N/A"
+
+        stats = {
+            "total_spent": f"₹{total_spent_float:,.2f}",
+            "transactions": transaction_count if transaction_count else 0,
+            "top_category": top_category
+        }
+
+        # 3. Category Breakdown
+        cursor.execute(
+            "SELECT category, SUM(amount) as total FROM expenses WHERE user_id = ? GROUP BY category",
+            (user_id,)
+        )
+        category_rows = cursor.fetchall()
+
+        categories = []
+        if category_rows and total_spent_float > 0:
+            for row in category_rows:
+                cat_total = row["total"]
+                categories.append({
+                    "name": row["category"],
+                    "amount": f"₹{cat_total:,.2f}",
+                    "percentage": round((cat_total / total_spent_float) * 100, 1)
+                })
+
+        # 4. Transaction History
+        cursor.execute(
+            "SELECT date, description, category, amount FROM expenses WHERE user_id = ? ORDER BY date DESC",
+            (user_id,)
+        )
+        transaction_rows = cursor.fetchall()
+
+        transactions = [
+            {
+                "date": row["date"],
+                "description": row["description"],
+                "category": row["category"],
+                "amount": f"₹{row['amount']:,.2f}"
+            }
+            for row in transaction_rows
+        ]
 
     return render_template(
         "profile.html",
