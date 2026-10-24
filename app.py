@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from database.db import init_db, seed_db, get_db
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = "spendly_secret_key" # Required for flashing messages
@@ -125,6 +126,34 @@ def profile():
 
     user_id = session["user_id"]
 
+    # --- Date Filtering Logic ---
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+
+    try:
+        if date_from:
+            datetime.strptime(date_from, "%Y-%m-%d")
+        if date_to:
+            datetime.strptime(date_to, "%Y-%m-%d")
+
+        if date_from and date_to and date_from > date_to:
+            flash("Start date must be before end date.", "error")
+            date_from, date_to = None, None
+    except ValueError:
+        flash("Invalid date format. Please use YYYY-MM-DD.", "error")
+        date_from, date_to = None, None
+
+    # Calculate preset dates for the template
+    today = datetime.now().date()
+    presets = {
+        "this_month_start": today.replace(day=1).isoformat(),
+        "this_month_end": today.isoformat(),
+        "last_3_months_start": (today - timedelta(days=90)).isoformat(),
+        "last_3_months_end": today.isoformat(),
+        "last_6_months_start": (today - timedelta(days=180)).isoformat(),
+        "last_6_months_end": today.isoformat(),
+    }
+
     with get_db() as conn:
         cursor = conn.cursor()
 
@@ -138,8 +167,6 @@ def profile():
             flash("User not found.", "error")
             return redirect(url_for("login"))
 
-        # Formatting created_at (YYYY-MM-DD HH:MM:SS) to "Month Year"
-        from datetime import datetime
         joined_date = datetime.strptime(user_row["created_at"], "%Y-%m-%d %H:%M:%S").strftime("%B %Y")
 
         user_data = {
@@ -148,67 +175,39 @@ def profile():
             "joined": joined_date
         }
 
-        # 2. Summary Statistics
-        cursor.execute(
-            "SELECT SUM(amount), COUNT(*) FROM expenses WHERE user_id = ?",
-            (user_id,)
-        )
-        total_spent_val, transaction_count = cursor.fetchone()
-        total_spent_float = total_spent_val if total_spent_val is not None else 0.0
+    # Fetch data using query helpers
+    from database.queries import get_summary_stats, get_category_breakdown, get_recent_transactions
 
-        cursor.execute(
-            "SELECT category FROM expenses WHERE user_id = ? GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
-            (user_id,)
-        )
-        top_cat_row = cursor.fetchone()
-        top_category = top_cat_row["category"] if top_cat_row else "N/A"
+    stats_data = get_summary_stats(user_id, date_from, date_to)
+    categories_data = get_category_breakdown(user_id, date_from, date_to)
+    transactions_data = get_recent_transactions(user_id, date_from, date_to)
 
-        stats = {
-            "total_spent": f"₹{total_spent_float:,.2f}",
-            "transactions": transaction_count if transaction_count else 0,
-            "top_category": top_category
-        }
+    # Format data for the template
+    stats = {
+        "total_spent": f"₹{stats_data['total_spent']:,.2f}",
+        "transactions": stats_data['transactions'],
+        "top_category": stats_data['top_category']
+    }
 
-        # 3. Category Breakdown
-        cursor.execute(
-            "SELECT category, SUM(amount) as total FROM expenses WHERE user_id = ? GROUP BY category",
-            (user_id,)
-        )
-        category_rows = cursor.fetchall()
+    categories = [
+        {**cat, "amount": f"₹{cat['amount']:,.2f}"}
+        for cat in categories_data
+    ]
 
-        categories = []
-        if category_rows and total_spent_float > 0:
-            for row in category_rows:
-                cat_total = row["total"]
-                categories.append({
-                    "name": row["category"],
-                    "amount": f"₹{cat_total:,.2f}",
-                    "percentage": round((cat_total / total_spent_float) * 100, 1)
-                })
-
-        # 4. Transaction History
-        cursor.execute(
-            "SELECT date, description, category, amount FROM expenses WHERE user_id = ? ORDER BY date DESC",
-            (user_id,)
-        )
-        transaction_rows = cursor.fetchall()
-
-        transactions = [
-            {
-                "date": row["date"],
-                "description": row["description"],
-                "category": row["category"],
-                "amount": f"₹{row['amount']:,.2f}"
-            }
-            for row in transaction_rows
-        ]
+    transactions = [
+        {**tx, "amount": f"₹{tx['amount']:,.2f}"}
+        for tx in transactions_data
+    ]
 
     return render_template(
         "profile.html",
         user=user_data,
         stats=stats,
         transactions=transactions,
-        categories=categories
+        categories=categories,
+        presets=presets,
+        date_from=date_from,
+        date_to=date_to
     )
 
 

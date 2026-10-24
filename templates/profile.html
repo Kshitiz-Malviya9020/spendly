@@ -3,295 +3,7 @@
 {% block title %}My Profile — Spendly{% endblock %}
 
 {% block head %}
-<style>
-    .profile-container {
-        max-width: var(--max-width);
-        margin: 3rem auto;
-        padding: 0 2rem;
-        display: grid;
-        grid-template-columns: 320px 1fr;
-        gap: 2.5rem;
-        align-items: start;
-    }
-
-    /* --- Sidebar / Identity Card --- */
-    .profile-sidebar {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .user-card {
-        background: var(--paper-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: 2.5rem 2rem;
-        text-align: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .avatar-container {
-        position: relative;
-        width: 90px;
-        height: 90px;
-        margin: 0 auto 1.5rem;
-    }
-
-    .avatar-circle {
-        width: 100%;
-        height: 100%;
-        background: var(--accent);
-        color: var(--paper);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(26, 71, 42, 0.2);
-    }
-
-    .user-name {
-        font-family: var(--font-display);
-        font-size: 1.5rem;
-        color: var(--ink);
-        margin-bottom: 0.25rem;
-        font-weight: 600;
-    }
-
-    .user-email {
-        color: var(--ink-muted);
-        font-size: 0.9rem;
-        margin-bottom: 1.5rem;
-        display: block;
-    }
-
-    .member-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.75rem;
-        color: var(--ink-muted);
-        background: var(--paper-warm);
-        padding: 0.4rem 0.8rem;
-        border-radius: 999px;
-        border: 1px solid var(--border-soft);
-    }
-
-    .member-badge i {
-        width: 14px;
-        height: 14px;
-    }
-
-    /* --- Main Content Area --- */
-    .profile-main {
-        display: flex;
-        flex-direction: column;
-        gap: 2.5rem;
-    }
-
-    /* Summary Stats */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-    }
-
-    .stat-tile {
-        background: var(--paper-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        transition: transform 0.2s ease;
-    }
-
-    .stat-tile:hover {
-        transform: translateY(-2px);
-        border-color: var(--accent);
-    }
-
-    .stat-header {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--ink-muted);
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
-    .stat-header i {
-        width: 16px;
-        height: 16px;
-        color: var(--accent);
-    }
-
-    .stat-value {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--ink);
-        font-variant-numeric: tabular-nums;
-        letter-spacing: -0.5px;
-    }
-
-    /* Sections */
-    .section-block {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-    }
-
-    .section-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        font-family: var(--font-display);
-        font-size: 1.25rem;
-        color: var(--ink);
-        font-weight: 600;
-    }
-
-    .section-header i {
-        width: 20px;
-        height: 20px;
-        color: var(--accent);
-    }
-
-    /* Table Design */
-    .table-container {
-        background: var(--paper-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-    }
-
-    .expense-table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-    }
-
-    .expense-table th {
-        background: var(--paper-warm);
-        padding: 0.8rem 1.5rem;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--ink-muted);
-        font-weight: 600;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .expense-table td {
-        padding: 1rem 1.5rem;
-        font-size: 0.9rem;
-        border-bottom: 1px solid var(--border-soft);
-        color: var(--ink-soft);
-        transition: background 0.2s ease;
-    }
-
-    .expense-table tr:hover td {
-        background: var(--paper-warm);
-    }
-
-    .expense-table td:last-child {
-        text-align: right;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .category-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.2rem 0.6rem;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        background: var(--accent-light);
-        color: var(--accent);
-        border: 1px solid rgba(26, 71, 42, 0.1);
-    }
-
-    .category-badge i {
-        width: 12px;
-        height: 12px;
-    }
-
-    /* Breakdown Grid */
-    .breakdown-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1rem;
-    }
-
-    .category-card {
-        background: var(--paper-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .category-info {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .cat-label {
-        font-weight: 500;
-        font-size: 0.9rem;
-        color: var(--ink);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .cat-label i {
-        width: 14px;
-        height: 14px;
-        color: var(--ink-muted);
-    }
-
-    .cat-amount {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--ink-muted);
-    }
-
-    .progress-track {
-        height: 6px;
-        background: var(--border-soft);
-        border-radius: 999px;
-        overflow: hidden;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: var(--accent);
-        border-radius: 999px;
-        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    @media (max-width: 1024px) {
-        .profile-container {
-            grid-template-columns: 1fr;
-        }
-        .profile-sidebar {
-            align-items: center;
-        }
-        .user-card {
-            width: 100%;
-            max-width: 400px;
-        }
-    }
-</style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -313,6 +25,33 @@
     </aside>
 
     <main class="profile-main">
+        <div class="filter-bar">
+            <div class="preset-group">
+                <a href="{{ url_for('profile') }}"
+                   class="preset-btn {{ 'active' if not date_from and not date_to else '' }}">
+                    All Time
+                </a>
+                <a href="{{ url_for('profile', date_from=presets.this_month_start, date_to=presets.this_month_end) }}"
+                   class="preset-btn {{ 'active' if date_from == presets.this_month_start and date_to == presets.this_month_end else '' }}">
+                    This Month
+                </a>
+                <a href="{{ url_for('profile', date_from=presets.last_3_months_start, date_to=presets.last_3_months_end) }}"
+                   class="preset-btn {{ 'active' if date_from == presets.last_3_months_start and date_to == presets.last_3_months_end else '' }}">
+                    Last 3 Months
+                </a>
+                <a href="{{ url_for('profile', date_from=presets.last_6_months_start, date_to=presets.last_6_months_end) }}"
+                   class="preset-btn {{ 'active' if date_from == presets.last_6_months_start and date_to == presets.last_6_months_end else '' }}">
+                    Last 6 Months
+                </a>
+            </div>
+
+            <form class="custom-filter" method="GET">
+                <input type="date" name="date_from" value="{{ date_from or '' }}">
+                <input type="date" name="date_to" value="{{ date_to or '' }}">
+                <button type="submit" class="apply-btn">Apply</button>
+            </form>
+        </div>
+
         <div class="stats-grid">
             <div class="stat-tile">
                 <div class="stat-header">
