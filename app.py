@@ -80,12 +80,13 @@ def login():
         try:
             with get_db() as conn:
                 user = conn.execute(
-                    "SELECT id, password_hash FROM users WHERE email = ?",
+                    "SELECT id, name, password_hash FROM users WHERE email = ?",
                     (email,)
                 ).fetchone()
 
                 if user and check_password_hash(user["password_hash"], password):
                     session["user_id"] = user["id"]
+                    session["user_name"] = user["name"]
                     flash("Welcome back! 😊", "success")
                     return redirect(url_for("landing"))
                 else:
@@ -119,7 +120,44 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    # Hardcoded data for UI mockup as per Spec Step 03
+    user_data = {
+        "name": "Kshitiz Malviya",
+        "email": "kshitiz@example.com",
+        "joined": "October 2023"
+    }
+
+    stats = {
+        "total_spent": "₹12,450.00",
+        "transactions": 42,
+        "top_category": "Food"
+    }
+
+    transactions = [
+        {"date": "2023-10-24", "description": "Starbucks Coffee", "category": "Food", "amount": "₹350.00"},
+        {"date": "2023-10-23", "description": "Uber Ride", "category": "Transport", "amount": "₹120.00"},
+        {"date": "2023-10-22", "description": "Grocery Store", "category": "Food", "amount": "₹1,200.00"},
+        {"date": "2023-10-21", "description": "Netflix Monthly", "category": "Entertainment", "amount": "₹499.00"},
+    ]
+
+    categories = [
+        {"name": "Food", "amount": "₹5,200", "percentage": 42},
+        {"name": "Transport", "amount": "₹2,100", "percentage": 17},
+        {"name": "Bills", "amount": "₹3,000", "percentage": 24},
+        {"name": "Entertainment", "amount": "₹1,150", "percentage": 9},
+        {"name": "Other", "amount": "₹1,000", "percentage": 8},
+    ]
+
+    return render_template(
+        "profile.html",
+        user=user_data,
+        stats=stats,
+        transactions=transactions,
+        categories=categories
+    )
 
 
 @app.route("/expenses/add")
