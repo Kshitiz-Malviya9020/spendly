@@ -110,3 +110,15 @@ def get_recent_transactions(user_id, date_from=None, date_to=None):
             }
             for row in transaction_rows
         ]
+
+def insert_expense(user_id, amount, category, date, description):
+    """
+    Inserts a new expense into the database.
+    """
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
+            (user_id, amount, category, date, description)
+        )
+        conn.commit()

@@ -78,9 +78,18 @@
 
         <section class="section-block">
             <div class="section-header">
-                <i data-lucide="list"></i>
-                Recent Transactions
+                <div class="header-flex">
+                    <div class="header-title">
+                        <i data-lucide="list"></i>
+                        Recent Transactions
+                    </div>
+                    <a href="{{ url_for('add_expense') }}" class="add-expense-btn">
+                        <i data-lucide="plus-circle"></i>
+                        Add Expense
+                    </a>
+                </div>
             </div>
+
             <div class="table-container">
                 <table class="expense-table">
                     <thead>

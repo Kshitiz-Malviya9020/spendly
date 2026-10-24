@@ -3,13 +3,47 @@ from database.db import init_db, seed_db, get_db
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+from database.queries import insert_expense
 
 app = Flask(__name__)
 app.secret_key = "spendly_secret_key" # Required for flashing messages
 
+VALID_CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
+def validate_expense_data(data):
+    """
+    Validates expense form data.
+    Returns a list of error messages. Empty list means valid.
+    """
+    errors = []
+    amount_str = data.get("amount")
+    category = data.get("category")
+    date_str = data.get("date")
 
-# ------------------------------------------------------------------ #
-# Routes                                                              #
+    if not amount_str:
+        errors.append("Amount is required.")
+    else:
+        try:
+            amount = float(amount_str)
+            if amount <= 0:
+                errors.append("Amount must be a positive number greater than 0.")
+        except ValueError:
+            errors.append("Invalid amount format. Please enter a number.")
+
+    if not category:
+        errors.append("Category is required.")
+    elif category not in VALID_CATEGORIES:
+        errors.append("Invalid category selected.")
+
+    if not date_str:
+        errors.append("Date is required.")
+    else:
+        try:
+            datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            errors.append("Invalid date format. Please use YYYY-MM-DD.")
+
+    return errors
+
 # ------------------------------------------------------------------ #
 
 @app.route("/")
@@ -218,23 +252,60 @@ def analytics():
     return render_template("analytics.html")
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
 
+    user_id = session["user_id"]
 
-@app.route("/expenses/<int:id>/edit")
-def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if request.method == "POST":
+        amount_str = request.form.get("amount")
+        category = request.form.get("category")
+        date_str = request.form.get("date")
+        description = request.form.get("description", "").strip()
 
+        # Validation
+        errors = validate_expense_data(request.form)
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            return render_template(
+                "add_expense.html",
+                amount=amount_str,
+                category=category,
+                date=date_str,
+                description=description
+            )
 
-@app.route("/expenses/<int:id>/delete")
-def delete_expense(id):
-    return "Logout — coming in Step 9"
+        # Success
+        try:
+            amount = float(amount_str)
+            insert_expense(user_id, amount,
+                           category,
+                           date_str,
+                           description if description else None)
+            flash("Expense added successfully! 💸", "success")
+            return redirect(url_for("profile"))
+        except sqlite3.Error as e:
+            flash("A database error occurred while saving your expense. Please try again.", "error")
+            return render_template(
+                "add_expense.html",
+                amount=amount_str,
+                category=category,
+                date=date_str,
+                description=description
+            )
+
+    return render_template("add_expense.html",
+                           amount=None,
+                           category=None,
+                           date=datetime.now().strftime("%Y-%m-%d"),
+                           description=None)
 
 
 if __name__ == "__main__":
     with app.app_context():
         init_db()
         seed_db()
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5002)
