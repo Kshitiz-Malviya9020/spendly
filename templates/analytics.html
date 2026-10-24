@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Spendly{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-container" style="text-align: center;">
+        <div class="auth-card" style="padding: 4rem 2rem; display: flex; flex-direction: column; align-items: center; gap: 2rem;">
+            <span class="hero-badge">Coming Soon</span>
+
+            <h1 class="auth-title" style="margin-bottom: 0.5rem;">Analytics Dashboard</h1>
+
+            <p class="auth-subtitle" style="max-width: 500px; margin: 0 auto 2rem auto;">
+                We're building a powerful set of tools to help you visualize your spending habits, track trends, and master your budget.
+            </p>
+
+            <div style="display: flex; gap: 2rem; margin-bottom: 3rem; color: var(--accent); opacity: 0.6;">
+                <i data-lucide="line-chart" style="width: 48px; height: 48px;"></i>
+                <i data-lucide="pie-chart" style="width: 48px; height: 48px;"></i>
+                <i data-lucide="trending-up" style="width: 48px; height: 48px;"></i>
+            </div>
+
+            <a href="{{ url_for('profile') }}" class="btn-ghost">
+                Back to Profile
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
